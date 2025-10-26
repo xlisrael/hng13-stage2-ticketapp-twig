@@ -1,0 +1,30 @@
+{% set STATUS_COLORS = {
+    'open': 'var(--status-open)',
+    'in_progress': 'var(--status-progress)',
+    'closed': 'var(--status-closed)'
+} %}
+
+<article class="ticket-card" aria-labelledby="t-{{ ticket.id }}">
+    <div class="ticket-top">
+        <h3 id="t-{{ ticket.id }}">{{ ticket.title }}</h3>
+        <span class="status-pill" style="background: {{ STATUS_COLORS[ticket.status] }}">
+            {{ ticket.status|replace({'_': ' '}) }}
+        </span>
+    </div>
+    <p class="ticket-desc">{{ ticket.description }}</p>
+    <div class="ticket-meta">
+        <small>Priority: {{ ticket.priority ?? 'normal' }}</small>
+        <div class="ticket-actions">
+            <form method="POST" action="/tickets/edit/{{ ticket.id }}" style="display: inline;">
+                <input type="hidden" name="title" value="{{ ticket.title }}">
+                <input type="hidden" name="description" value="{{ ticket.description }}">
+                <input type="hidden" name="status" value="{{ ticket.status }}">
+                <input type="hidden" name="priority" value="{{ ticket.priority }}">
+                <button type="submit" class="btn-sm">Edit</button>
+            </form>
+            <form method="POST" action="/tickets/delete/{{ ticket.id }}" style="display: inline;" onsubmit="return confirm('Delete this ticket?')">
+                <button type="submit" class="btn-sm danger">Delete</button>
+            </form>
+        </div>
+    </div>
+</article>

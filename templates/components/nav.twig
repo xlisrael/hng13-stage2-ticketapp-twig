@@ -1,0 +1,25 @@
+{% set user = _SESSION.user ?? null %}
+{% set current_path = _SERVER.REQUEST_URI %}
+
+<header class="site-nav" role="navigation" aria-label="main">
+    <div class="container nav-inner">
+        <div class="brand">
+            <a href="/" class="brand-link">TicketApp</a>
+        </div>
+
+        <nav class="links" aria-label="main navigation">
+            <a href="/" class="{{ current_path == '/' ? 'active' }}">Home</a>
+                <a href="/dashboard" class="{{ current_path == '/dashboard' ? 'active' }}">Dashboard</a>
+                <a href="/tickets" class="{{ current_path == '/tickets' ? 'active' }}">Tickets</a>
+        </nav>
+
+        <div class="actions">
+            {% if not user %}
+                <a href="/auth/login" class="btn-outline">Login</a>
+            {% else %}
+                <span style="color: white; margin-right: 1rem;">Hello, {{ user.name }}</span>
+                <a href="/logout" class="btn-ghost">Logout</a>
+            {% endif %}
+        </div>
+    </div>
+</header>

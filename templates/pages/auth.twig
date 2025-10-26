@@ -1,0 +1,42 @@
+{% extends "layouts/base.twig" %}
+
+{% block content %}
+<main class="auth-page container">
+    <h1>{{ mode == 'login' ? 'Login' : 'Create an account' }}</h1>
+    
+    <form class="auth-form" method="POST" novalidate>
+        {% if mode != 'login' %}
+        <label>
+            <span>Full name</span>
+            <input name="name" required />
+        </label>
+        {% endif %}
+
+        <label>
+            <span>Email</span>
+            <input name="email" type="email" required />
+        </label>
+
+        <label>
+            <span>Password</span>
+            <input name="password" type="password" required />
+        </label>
+
+        <div class="auth-actions">
+            <button class="btn" type="submit">{{ mode == 'login' ? 'Login' : 'Sign up' }}</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 1rem;">
+            {% if mode == 'login' %}
+                <p>Don't have an account? <a href="/auth/signup">Sign up</a></p>
+            {% else %}
+                <p>Already have an account? <a href="/auth/login">Login</a></p>
+            {% endif %}
+        </div>
+    </form>
+    
+    <div class="demo-credentials" style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+        <p><strong>Demo Credentials:</strong> Use any email and password</p>
+    </div>
+</main>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "layouts/base.twig" %}
+
+{% block content %}
+<main class="hero-container">
+    <div class="hero-inner container">
+        <div class="hero-left">
+            <h1>TicketApp — Manage issues, fast.</h1>
+            <p class="lead">
+                A simple multi-framework ticket management app (Twig version).
+                Create, track and close tickets — with a consistent layout.
+            </p>
+
+            <div class="cta-row">
+                <a href="/auth/signup" class="btn">Get Started</a>
+                <a href="/auth/login" class="btn-outline">Login</a>
+            </div>
+        </div>
+
+        <div class="hero-right" aria-hidden="true">
+            <img src="/assets/images/circle.svg" alt="" class="decor-circle decor-1"/>
+            <div class="demo-box">Feature box - quick stats</div>
+        </div>
+    </div>
+
+    <div class="hero-wave" aria-hidden="true"></div>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>© {{ "now"|date("Y") }} TicketApp — Built for HNG Stage 2</p>
+        </div>
+    </footer>
+</main>
+
+<style>
+.hero-wave {
+    color: #0f70dfff;
+    width: 100%;
+    height: 250px;
+    position: relative;
+    z-index: 1;
+}
+</style>
+{% endblock %}

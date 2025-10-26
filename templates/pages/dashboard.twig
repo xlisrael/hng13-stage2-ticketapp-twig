@@ -1,0 +1,59 @@
+{% extends "layouts/base.twig" %}
+
+{% block content %}
+<main class="container dashboard-page">
+    <h1>Dashboard</h1>
+    <p>Welcome back, {{ user.name }}!</p>
+
+    <div class="stats-grid" role="region" aria-label="ticket summary">
+        <div class="stat-card">
+            <h3>Total</h3>
+            <p>{{ stats.total }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Open</h3>
+            <p>{{ stats.open }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>In Progress</h3>
+            <p>{{ stats.in_progress }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Closed</h3>
+            <p>{{ stats.closed }}</p>
+        </div>
+    </div>
+
+    <div class="recent-tickets" style="margin-top: 2rem;">
+        <h2>Recent Tickets</h2>
+        {% if recentTickets is empty %}
+            <p>No tickets yet. <a href="/tickets">Create your first ticket</a></p>
+        {% else %}
+            <div class="tickets-list">
+                {% for ticket in recentTickets %}
+                    <div class="ticket-card">
+                        <div class="ticket-top">
+                            <h3>{{ ticket.title }}</h3>
+                            <span class="status-pill" style="background: 
+                                {% if ticket.status == 'open' %}#28a745
+                                {% elseif ticket.status == 'in_progress' %}#ffb020
+                                {% else %}#6c757d{% endif %}">
+                                {{ ticket.status }}
+                            </span>
+                        </div>
+                        <p class="ticket-desc">{{ ticket.description }}</p>
+                        <div class="ticket-meta">
+                            <small>Priority: {{ ticket.priority ?? 'normal' }}</small>
+                            <small>Created: {{ ticket.createdAt }}</small>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="dash-actions">
+        <button class="btn" onclick="location.href='/tickets'">Manage Tickets</button>
+    </div>
+</main>
+{% endblock %}

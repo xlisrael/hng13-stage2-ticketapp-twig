@@ -1,0 +1,79 @@
+{% extends "layouts/base.twig" %}
+
+{% block content %}
+<main class="container tickets-page">
+    <h1>Ticket Management</h1>
+
+    {% if message %}
+        <div class="msg success">{{ message }}</div>
+    {% endif %}
+
+    <form class="ticket-form" method="POST" novalidate>
+        <div class="form-row">
+            <label>
+                <span>Title</span>
+                <input name="title" required placeholder="Enter ticket title" />
+            </label>
+
+            <label>
+                <span>Status</span>
+                <select name="status" required>
+                    <option value="open">open</option>
+                    <option value="in_progress">in_progress</option>
+                    <option value="closed">closed</option>
+                </select>
+            </label>
+        </div>
+
+        <label>
+            <span>Priority</span>
+            <select name="priority">
+                <option value="low">low</option>
+                <option value="normal" selected>normal</option>
+                <option value="high">high</option>
+            </select>
+        </label>
+
+        <label>
+            <span>Description</span>
+            <textarea name="description" placeholder="Enter ticket description"></textarea>
+        </label>
+
+        <div class="form-actions">
+            <button class="btn" type="submit">Create Ticket</button>
+        </div>
+    </form>
+
+    <section class="tickets-list" aria-live="polite">
+        <h2>Your Tickets</h2>
+        {% if tickets is empty %}
+            <p>No tickets yet — create one above.</p>
+        {% else %}
+            {% for ticket in tickets %}
+                <div class="ticket-card">
+                    <div class="ticket-top">
+                        <h3>{{ ticket.title }}</h3>
+                        <span class="status-pill" style="background: 
+                            {% if ticket.status == 'open' %}#28a745
+                            {% elseif ticket.status == 'in_progress' %}#ffb020
+                            {% else %}#6c757d{% endif %}">
+                            {{ ticket.status }}
+                        </span>
+                    </div>
+                    <p class="ticket-desc">{{ ticket.description }}</p>
+                    <div class="ticket-meta">
+                        <small>Priority: {{ ticket.priority ?? 'normal' }}</small>
+                        <small>Created: {{ ticket.createdAt }}</small>
+                        <div class="ticket-actions">
+                            <form method="POST" action="/tickets/delete" style="display: inline;">
+                                <input type="hidden" name="id" value="{{ ticket.id }}">
+                                <button type="submit" class="btn-sm danger" onclick="return confirm('Delete this ticket?')">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </section>
+</main>
+{% endblock %}
