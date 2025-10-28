@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ### Multi-stage Dockerfile for the ticketapp (PHP + Apache)
 ### Builder: installs PHP dependencies with Composer
 FROM composer:2 AS builder
@@ -43,3 +44,25 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 EXPOSE 80
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
+=======
+FROM php:8.1-cli
+
+WORKDIR /app
+
+# Install system deps needed by typical PHP packages (add as required)
+RUN apt-get update && apt-get install -y \
+    zip unzip git \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+COPY . /app
+
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+ENV PORT=10000
+EXPOSE 10000
+
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT} -t public public/index.php"]
+>>>>>>> d712ad928295fe1108ad5728b6c1f9ad956a16f3
