@@ -1,45 +1,55 @@
-### Multi-stage Dockerfile for the ticketapp (PHP + Apache)
-### Builder: installs PHP dependencies with Composer
-FROM composer:2 AS builder
-WORKDIR /app
-
-# Copy only composer files first for better caching
-COPY composer.json composer.lock* /app/
-COPY . /app
-
-# Install PHP dependencies (no dev deps) in builder image
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --working-dir=/app
-
-
-### Runtime image: PHP with Apache
+# Use official PHP 8.2 + Apache image
 FROM php:8.2-apache
 
-# Install system deps needed by common PHP extensions and tools
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       zip unzip git libzip-dev \
-    && docker-php-ext-install zip \
-    && rm -rf /var/lib/apt/lists/*
+# Install required packages and extensions
+RUN apt-get update && apt-get install -y \
+    git unzip libzip-dev libicu-dev zlib1g-dev && \
+    docker-php-ext-install intl pdo pdo_mysql zip && \
+    a2enmod rewrite
 
-# Enable Apache rewrite
-RUN a2enmod rewrite
+# Set ServerName to prevent Apache warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# Copy application files (including vendor from builder)
-COPY --from=builder /app /var/www/html
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Use public/ as the document root
-RUN sed -i 's#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#' /etc/apache2/sites-available/000-default.conf \
-    && sed -i 's#<VirtualHost \*:80>#<VirtualHost *:80>#' /etc/apache2/sites-available/000-default.conf || true
+# Set working directory
+WORKDIR /var/www/html
 
-# Ensure cache directory exists and permissions are correct
-RUN mkdir -p /var/www/html/cache/twig \
-    && chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html
+# Copy composer files first for better caching
+COPY composer.json composer.lock* ./
 
-# Entrypoint will adjust Listen port and start Apache
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
+# Copy the rest of the project
+COPY . .
+
+# Explicitly change document root to public directory
+RUN sed -ri -e 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's|/var/www/html|/var/www/html/public|g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# Alternative method - more explicit document root change
+RUN cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/000-default.conf.backup
+RUN echo '<VirtualHost *:80>\n\
+    DocumentRoot /var/www/html/public\n\
+    \n\
+    <Directory /var/www/html/public>\n\
+        AllowOverride All\n\
+        Require all granted\n\
+        FallbackResource /index.php\n\
+    </Directory>\n\
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+
+# Create a simple test file to verify PHP is working
+RUN echo "<?php echo 'PHP is working! Current directory: ' . getcwd() . ', Request URI: ' . \$_SERVER['REQUEST_URI']; ?>" > /var/www/html/public/test.php
+
+# Fix permissions
+RUN chown -R www-data:www-data /var/www/html && \
+    chmod -R 755 /var/www/html
+
+# Expose port 80
 EXPOSE 80
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
+# Start Apache
 CMD ["apache2-foreground"]

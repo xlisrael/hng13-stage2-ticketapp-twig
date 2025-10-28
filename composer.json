@@ -13,11 +13,9 @@
             "App\\": "src/"
         }
     },
-    "require": {
-      "php": "^8.0",
-      "twig/twig": "^3.0",
-      "symfony/routing": "^6.0",
-      "symfony/http-foundation": "^6.0"
-    }
+        "config": {
+                "optimize-autoloader": true,
+                "preferred-install": "dist"
+        }
 
 }
