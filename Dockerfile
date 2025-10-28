@@ -22,11 +22,18 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-di
 # Copy the rest of the project
 COPY . .
 
+# Change Apache document root to public directory
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+
+# Update Apache configuration
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
 # Fix permissions
 RUN chown -R www-data:www-data /var/www/html && chmod -R 755 /var/www/html
 
 # Apache configuration to allow overrides (.htaccess)
-RUN echo '<Directory /var/www/html/>\n\
+RUN echo '<Directory /var/www/html/public/>\n\
     Options Indexes FollowSymLinks\n\
     AllowOverride All\n\
     Require all granted\n\
