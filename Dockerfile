@@ -1,58 +1,20 @@
-# Use PHP 8.2 Apache base image
-FROM php:8.2-apache
+FROM php:8.1-cli
 
-# Install system dependencies and clean up in one layer
+WORKDIR /app
+
+# Install system deps needed by typical PHP packages (add as required)
 RUN apt-get update && apt-get install -y \
-    zip \
-    unzip \
-    git \
-    libzip-dev \
-    && docker-php-ext-install zip \
-    && rm -rf /var/lib/apt/lists/* \
-    && a2enmod rewrite
+    zip unzip git \
+  && rm -rf /var/lib/apt/lists/*
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Install composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Set working directory
-WORKDIR /var/www/html
+COPY . /app
 
-# Copy composer files first for better layer caching
-COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader --prefer-dist --no-scripts
-
-# Copy the rest of the application
-COPY . .
-
-# Set correct permissions
-RUN mkdir -p cache \
-    && chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html \
-    && chmod -R 775 cache
-
-
-
-# Configure Apache
-RUN sed -i 's#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#' /etc/apache2/sites-available/000-default.conf \
-    && echo 'DirectoryIndex index.php' >> /etc/apache2/sites-available/000-default.conf \
-    && echo '<Directory /var/www/html/public>\n\
-    AllowOverride All\n\
-    Require all granted\n\
-</Directory>' >> /etc/apache2/sites-available/000-default.conf
-
-# Create cache directory
-RUN mkdir -p cache/twig \
-    && chown -R www-data:www-data cache
-
-# Expose port from environment
 ENV PORT=10000
-EXPOSE ${PORT}
+EXPOSE 10000
 
-# Copy and set up entrypoint
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Use entrypoint for Apache configuration and startup
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT} -t public public/index.php"]
