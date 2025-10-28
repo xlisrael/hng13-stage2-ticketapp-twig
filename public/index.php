@@ -5,7 +5,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 session_start();
-header("Location: public/");
 
 // Set up Twig
 $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../templates');
