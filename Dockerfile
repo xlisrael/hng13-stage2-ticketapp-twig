@@ -1,58 +1,45 @@
-# Use PHP 8.2 Apache base image
+### Multi-stage Dockerfile for the ticketapp (PHP + Apache)
+### Builder: installs PHP dependencies with Composer
+FROM composer:2 AS builder
+WORKDIR /app
+
+# Copy only composer files first for better caching
+COPY composer.json composer.lock* /app/
+COPY . /app
+
+# Install PHP dependencies (no dev deps) in builder image
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --working-dir=/app
+
+
+### Runtime image: PHP with Apache
 FROM php:8.2-apache
 
-# Install system dependencies and clean up in one layer
-RUN apt-get update && apt-get install -y \
-    zip \
-    unzip \
-    git \
-    libzip-dev \
+# Install system deps needed by common PHP extensions and tools
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       zip unzip git libzip-dev \
     && docker-php-ext-install zip \
-    && rm -rf /var/lib/apt/lists/* \
-    && a2enmod rewrite
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Enable Apache rewrite
+RUN a2enmod rewrite
 
-# Set working directory
-WORKDIR /var/www/html
+# Copy application files (including vendor from builder)
+COPY --from=builder /app /var/www/html
 
-# Copy composer files first for better layer caching
-COPY composer.json composer.lock ./
-
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader --prefer-dist --no-scripts
-
-# Copy the rest of the application
-COPY . .
-
-# Set correct permissions
-RUN mkdir -p cache \
-    && chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html \
-    && chmod -R 775 cache
-
-
-
-# Configure Apache
+# Use public/ as the document root
 RUN sed -i 's#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#' /etc/apache2/sites-available/000-default.conf \
-    && echo 'DirectoryIndex index.php' >> /etc/apache2/sites-available/000-default.conf \
-    && echo '<Directory /var/www/html/public>\n\
-    AllowOverride All\n\
-    Require all granted\n\
-</Directory>' >> /etc/apache2/sites-available/000-default.conf
+    && sed -i 's#<VirtualHost \*:80>#<VirtualHost *:80>#' /etc/apache2/sites-available/000-default.conf || true
 
-# Create cache directory
-RUN mkdir -p cache/twig \
-    && chown -R www-data:www-data cache
+# Ensure cache directory exists and permissions are correct
+RUN mkdir -p /var/www/html/cache/twig \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
 
-# Expose port from environment
-ENV PORT=10000
-EXPOSE ${PORT}
-
-# Copy and set up entrypoint
+# Entrypoint will adjust Listen port and start Apache
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Use entrypoint for Apache configuration and startup
+EXPOSE 80
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["apache2-foreground"]
