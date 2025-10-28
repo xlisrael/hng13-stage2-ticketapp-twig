@@ -8,7 +8,9 @@ COPY composer.json composer.lock* /app/
 COPY . /app
 
 # Install PHP dependencies (no dev deps) in builder image
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --working-dir=/app
+WORKDIR /var/www/html
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
 
 
 ### Runtime image: PHP with Apache
@@ -21,11 +23,17 @@ RUN apt-get update \
     && docker-php-ext-install zip \
     && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y \
+    libicu-dev zlib1g-dev libzip-dev unzip git && \
+    docker-php-ext-install intl pdo pdo_mysql zip
+
+
 # Enable Apache rewrite
 RUN a2enmod rewrite
 
 # Copy application files (including vendor from builder)
 COPY --from=builder /app /var/www/html
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Use public/ as the document root
 RUN sed -i 's#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#' /etc/apache2/sites-available/000-default.conf \
